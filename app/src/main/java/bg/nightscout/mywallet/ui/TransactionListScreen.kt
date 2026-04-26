@@ -48,36 +48,36 @@ fun TransactionListScreen(
             Box(contentAlignment = Alignment.BottomEnd) {
                 // Quick Add Options
                 if (showQuickAdd) {
-                    // Income option (ABOVE)
-                    val incomeSelected = dragOffset.y < -dragThreshold
-                    val incomeScale by animateFloatAsState(if (incomeSelected) 1.2f else 1f)
-                    
-                    Surface(
-                        shape = CircleShape,
-                        color = if (incomeSelected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.surfaceVariant,
-                        tonalElevation = 4.dp,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .offset(y = (-80).dp)
-                            .scale(incomeScale)
-                    ) {
-                        Text("Income", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                    }
-
-                    // Expense option (LEFT)
-                    val expenseSelected = dragOffset.x < -dragThreshold
+                    // Expense option (ABOVE)
+                    val expenseSelected = dragOffset.y < -dragThreshold
                     val expenseScale by animateFloatAsState(if (expenseSelected) 1.2f else 1f)
-
+                    
                     Surface(
                         shape = CircleShape,
                         color = if (expenseSelected) Color(0xFFF44336) else MaterialTheme.colorScheme.surfaceVariant,
                         tonalElevation = 4.dp,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .offset(x = (-80).dp)
+                            .offset(y = (-80).dp)
                             .scale(expenseScale)
                     ) {
                         Text("Expense", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    }
+
+                    // Income option (LEFT)
+                    val incomeSelected = dragOffset.x < -dragThreshold
+                    val incomeScale by animateFloatAsState(if (incomeSelected) 1.2f else 1f)
+
+                    Surface(
+                        shape = CircleShape,
+                        color = if (incomeSelected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 4.dp,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = (-80).dp)
+                            .scale(incomeScale)
+                    ) {
+                        Text("Income", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                     }
                 }
 
@@ -99,9 +99,9 @@ fun TransactionListScreen(
                             onDragEnd = {
                                 if (showQuickAdd) {
                                     if (dragOffset.y < -dragThreshold) {
-                                        onAddTransaction(TransactionType.INCOME)
-                                    } else if (dragOffset.x < -dragThreshold) {
                                         onAddTransaction(TransactionType.EXPENSE)
+                                    } else if (dragOffset.x < -dragThreshold) {
+                                        onAddTransaction(TransactionType.INCOME)
                                     }
                                 }
                                 showQuickAdd = false

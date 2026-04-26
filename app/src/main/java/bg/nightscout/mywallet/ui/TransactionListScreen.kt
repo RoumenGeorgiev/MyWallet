@@ -2,7 +2,7 @@ package bg.nightscout.mywallet.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,16 +17,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import bg.nightscout.mywallet.data.Transaction
 import bg.nightscout.mywallet.data.TransactionType
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,80 +39,81 @@ fun TransactionListScreen(
     val accounts by viewModel.allAccounts.collectAsState()
 
     var showQuickAdd by remember { mutableStateOf(false) }
-    var dragOffset by remember { mutableStateOf(0f) }
-    val dragThreshold = 100f
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
+    val dragThreshold = 60f
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("My Wallet") }) },
         floatingActionButton = {
             Box(contentAlignment = Alignment.BottomEnd) {
                 // Quick Add Options
-                AnimatedVisibility(
-                    visible = showQuickAdd,
-                    enter = fadeIn() + expandVertically(),
-                    exit = fadeOut() + shrinkVertically()
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        modifier = Modifier.padding(bottom = 80.dp)
+                if (showQuickAdd) {
+                    // Income option (ABOVE)
+                    val incomeSelected = dragOffset.y < -dragThreshold
+                    val incomeScale by animateFloatAsState(if (incomeSelected) 1.2f else 1f)
+                    
+                    Surface(
+                        shape = CircleShape,
+                        color = if (incomeSelected) Color(0xFF4CAF50) else MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 4.dp,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(y = (-80).dp)
+                            .scale(incomeScale)
                     ) {
-                        val incomeScale by animateFloatAsState(if (dragOffset > dragThreshold / 2) 1.2f else 1f)
-                        val expenseScale by animateFloatAsState(if (dragOffset < -dragThreshold / 2) 1.2f else 1f)
+                        Text("Income", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    }
 
-                        Surface(
-                            shape = CircleShape,
-                            color = if (dragOffset > dragThreshold / 2) Color(0xFF4CAF50) else MaterialTheme.colorScheme.surfaceVariant,
-                            tonalElevation = 4.dp,
-                            modifier = Modifier.scale(incomeScale).padding(bottom = 8.dp)
-                        ) {
-                            Text("Income", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                        }
-                        Surface(
-                            shape = CircleShape,
-                            color = if (dragOffset < -dragThreshold / 2) Color(0xFFF44336) else MaterialTheme.colorScheme.surfaceVariant,
-                            tonalElevation = 4.dp,
-                            modifier = Modifier.scale(expenseScale)
-                        ) {
-                            Text("Expense", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                        }
+                    // Expense option (LEFT)
+                    val expenseSelected = dragOffset.x < -dragThreshold
+                    val expenseScale by animateFloatAsState(if (expenseSelected) 1.2f else 1f)
+
+                    Surface(
+                        shape = CircleShape,
+                        color = if (expenseSelected) Color(0xFFF44336) else MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 4.dp,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(x = (-80).dp)
+                            .scale(expenseScale)
+                    ) {
+                        Text("Expense", modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                     }
                 }
 
                 // Main FAB
                 FloatingActionButton(
-                    onClick = { if (!showQuickAdd) onAddTransaction(null) },
+                    onClick = { },
                     modifier = Modifier.pointerInput(Unit) {
                         detectTapGestures(
-                            onLongPress = {
-                                showQuickAdd = true
-                            },
                             onTap = {
                                 if (!showQuickAdd) onAddTransaction(null)
                             }
                         )
                     }.pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { },
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                showQuickAdd = true
+                                dragOffset = Offset.Zero
+                            },
                             onDragEnd = {
                                 if (showQuickAdd) {
-                                    if (dragOffset > dragThreshold / 2) {
+                                    if (dragOffset.y < -dragThreshold) {
                                         onAddTransaction(TransactionType.INCOME)
-                                    } else if (dragOffset < -dragThreshold / 2) {
+                                    } else if (dragOffset.x < -dragThreshold) {
                                         onAddTransaction(TransactionType.EXPENSE)
                                     }
                                 }
                                 showQuickAdd = false
-                                dragOffset = 0f
+                                dragOffset = Offset.Zero
                             },
                             onDragCancel = {
                                 showQuickAdd = false
-                                dragOffset = 0f
+                                dragOffset = Offset.Zero
                             },
                             onDrag = { change, dragAmount ->
-                                if (showQuickAdd) {
-                                    dragOffset += dragAmount.y
-                                    change.consume()
-                                }
+                                dragOffset += dragAmount
+                                change.consume()
                             }
                         )
                     }
